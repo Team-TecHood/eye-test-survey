@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Professional color vision test using adaptive staircase algorithm. Assess Deuteranomaly, Protanomaly, and Tritanomaly with clinically accurate Ishihara-style plates.">
+    <title>VisuAll Eye Test - Digital Color Vision Assessment</title>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-card: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --border-color: #444444;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --loading-bg: rgba(42, 42, 42, 0.95);
+            --button-bg: #333333;
+            --button-hover: #444444;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f5f5f5;
+            --bg-card: #ffffff;
+            --text-primary: #333333;
+            --text-secondary: #555555;
+            --text-muted: #777777;
+            --border-color: #dddddd;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --loading-bg: rgba(255, 255, 255, 0.95);
+            --button-bg: #f0f0f0;
+            --button-hover: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            margin: 0;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .header {
+            margin: 30px 0 20px 0;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 20px;
+            background: var(--button-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--button-hover);
+            transform: translateY(-1px);
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #0072B2;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #888;
+        }
+
+        .test-area {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            margin: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .test-content {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            justify-content: center;
+        }
+
+        .plate-section {
+            flex: 0 0 auto;
+        }
+
+        .controls-section {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .progress-info {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .plate-container {
+            margin-bottom: 0;
+            position: relative;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(42, 42, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #444;
+            border-top: 3px solid #0072B2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        .loading-text {
+            color: #ccc;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .plate-image {
+            max-width: 300px;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        .input-section {
+            margin-top: 0;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto 15px;
+        }
+
+        .number-btn {
+            background-color: var(--button-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: normal;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .number-btn:hover {
+            background-color: #0072B2;
+            border-color: #0072B2;
+            color: #fff;
+        }
+
+        .number-btn:focus {
+            outline: none;
+        }
+
+        .number-btn.selected {
+            background-color: #0072B2;
+            border-color: #0072B2;
+        }
+
+        .nothing-btn {
+            background-color: var(--button-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 16px 48px;
+            font-size: 1.1rem;
+            font-weight: normal;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0 auto 10px;
+            display: block;
+        }
+
+        .nothing-btn:hover {
+            background-color: #0072B2;
+            border-color: #0072B2;
+            color: #fff;
+        }
+
+        .nothing-btn:focus {
+            outline: none;
+        }
+
+        .nothing-btn.selected {
+            background-color: #0072B2;
+            border-color: #0072B2;
+        }
+
+        .results-container {
+            display: none;
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            transition: background-color 0.3s ease;
+            padding: 40px;
+            margin: 20px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+        }
+
+        .results-title {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #0072B2;
+            font-weight: 600;
+        }
+
+        .diagnosis {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            padding: 15px;
+            color: var(--text-primary);
+            background-color: var(--button-bg);
+            border-radius: 8px;
+            border-left: 4px solid #0072B2;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .scores {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .score-item {
+            background-color: var(--button-bg);
+            padding: 15px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0072B2;
+        }
+
+        .restart-btn {
+            background-color: #0072B2;
+            border: 2px solid #0072B2;
+            color: #fff;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: normal;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .restart-btn:hover {
+            background-color: var(--button-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .restart-btn:focus {
+            outline: none;
+        }
+
+        .start-screen {
+            text-align: center;
+        }
+
+        .start-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 600px;
+            text-align: justify;
+        }
+
+        .start-btn {
+            background-color: #0072B2;
+            border: 2px solid #0072B2;
+            color: #fff;
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            font-weight: normal;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .start-btn:hover {
+            background-color: var(--button-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .start-btn:focus {
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            .title {
+                font-size: 1.8rem;
+            }
+
+            .header {
+                margin: 25px 0 15px 0;
+            }
+
+            .test-area {
+                padding: 15px;
+                margin: 15px;
+            }
+
+            .theme-toggle {
+                right: 15px;
+            }
+
+            .results-container {
+                margin: 15px;
+            }
+
+            .test-content {
+                flex-direction: column;
+                gap: 15px;
+                justify-content: center;
+            }
+
+            .button-grid {
+                max-width: 340px;
+                gap: 10px;
+                margin: 0 auto 10px;
+            }
+
+            .number-btn {
+                padding: 14px 28px;
+                font-size: 1rem;
+            }
+
+            .progress-info {
+                margin-bottom: 15px;
+                font-size: 0.85rem;
+            }
+
+            .plate-image {
+                max-width: 280px;
+            }
+
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background-color: var(--button-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #0072B2;
+        }
+
+        .user-info-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .start-screen .test-area,
+        .user-info-screen .test-area {
+            width: 92%;
+            max-width: 680px;
+            padding: 40px;
+            margin: 40px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+            <h1 class="title">VisuAll Eye Test</h1>
+            <p class="subtitle">Digital Color Vision Assessment</p>
+        </div>
+
+        <!-- User Info Screen -->
+        <div id="userInfoScreen" class="user-info-screen">
+            <div class="test-area">
+                <h2 class="results-title" style="margin-bottom: 20px;">Your Information</h2>
+                <div class="form-group">
+                    <label for="userName">Full Name</label>
+                    <input type="text" id="userName" placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="userPhone">Phone Number</label>
+                    <input type="tel" id="userPhone" placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label for="userMessenger">Messenger Username</label>
+                    <input type="text" id="userMessenger" placeholder="Enter your messenger username">
+                </div>
+                <button class="start-btn" onclick="submitUserInfo()" style="margin-top: 20px;">Continue</button>
+            </div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="start-screen" style="display: none;">
+            <div class="test-area">
+                <p class="start-description">
+                    This test will assess your color vision using custom designed plates.
+                    You'll be shown images with numbers that may be difficult to see
+                    if you have color vision deficiency. Simply select the number you see,
+                    or select "Nothing" if you can't see any number.
+                </p>
+                <button class="start-btn" onclick="startScreening()">Begin Test</button>
+            </div>
+        </div>
+
+        <!-- Test Screen -->
+        <div id="testScreen" class="test-area" style="display: none;">
+            <!-- <div class="progress-info">
+                <span id="plateCounter">Plate 1 of 18</span>
+            </div> -->
+
+            <div class="test-content">
+                <div class="plate-section">
+                    <div class="plate-container">
+                        <img id="plateImage" class="plate-image" src="" alt="Color vision test plate">
+                        <div id="loadingOverlay" class="loading-overlay">
+                            <div class="loading-spinner"></div>
+                            <div class="loading-text">Loading plate...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <div class="input-section">
+                        <div class="button-grid" role="group" aria-label="Number selection buttons">
+                            <button class="number-btn" onclick="selectNumber(1)" aria-label="Select number 1">1</button>
+                            <button class="number-btn" onclick="selectNumber(2)" aria-label="Select number 2">2</button>
+                            <button class="number-btn" onclick="selectNumber(3)" aria-label="Select number 3">3</button>
+                            <button class="number-btn" onclick="selectNumber(4)" aria-label="Select number 4">4</button>
+                            <button class="number-btn" onclick="selectNumber(5)" aria-label="Select number 5">5</button>
+                            <button class="number-btn" onclick="selectNumber(6)" aria-label="Select number 6">6</button>
+                            <button class="number-btn" onclick="selectNumber(7)" aria-label="Select number 7">7</button>
+                            <button class="number-btn" onclick="selectNumber(8)" aria-label="Select number 8">8</button>
+                            <button class="number-btn" onclick="selectNumber(9)" aria-label="Select number 9">9</button>
+                        </div>
+
+                        <button class="nothing-btn" onclick="selectNothing()"
+                            aria-label="I see nothing">Nothing</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="resultsScreen" class="results-container">
+            <h2 class="results-title">Test Results</h2>
+
+            <div class="diagnosis" id="diagnosisResult">
+                <!-- Diagnosis will be inserted here -->
+            </div>
+
+            <div class="scores">
+                <div class="score-item">
+                    <div class="score-label">Red Cones</div>
+                    <div class="score-value" id="redScore">--</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">Green Cones</div>
+                    <div class="score-value" id="greenScore">--</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">Blue Cones</div>
+                    <div class="score-value" id="blueScore">--</div>
+                </div>
+            </div>
+
+            <button class="restart-btn" onclick="restartTest()">Take Test Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggle = document.querySelector('.theme-toggle');
+
+            if (body.getAttribute('data-theme') === 'light') {
+                body.removeAttribute('data-theme');
+                themeToggle.textContent = '🌙';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeToggle.textContent = '☀️';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggle = document.querySelector('.theme-toggle');
+
+            if (savedTheme === 'light') {
+                document.body.setAttribute('data-theme', 'light');
+                themeToggle.textContent = '☀️';
+            } else {
+                themeToggle.textContent = '🌙';
+            }
+        });
+
+        // Test configuration and state
+        const testConfig = {
+            shades: [87, 75, 62, 50, 37, 25], // High to low contrast (easiest to hardest) for adaptive testing
+            types: ['Protan', 'Deutan', 'Tritan']
+        };
+
+        let currentTest = {
+            currentTypeIndex: 0, // Which type we're currently testing (0=Deutan, 1=Protan, 2=Tritan)
+            axisResults: {
+                'Deutan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null },
+                'Protan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null },
+                'Tritan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null }
+            },
+            selectedAnswer: null
+        };
+
+        // Screening test configuration
+        const screeningConfig = {
+            // Correct answer is always the filename number (same as main test)
+            currentPlates: [],
+            correctAnswers: 0,
+            isScreening: true
+        };
+
+        let userData = {
+            name: '',
+            phone: '',
+            messenger: ''
+        };
+
+        function submitUserInfo() {
+            const name = document.getElementById('userName').value.trim();
+            const phone = document.getElementById('userPhone').value.trim();
+            const messenger = document.getElementById('userMessenger').value.trim();
+
+            if (!name || !phone || !messenger) {
+                alert('Please fill in all fields before proceeding.');
+                return;
+            }
+
+            userData = { name, phone, messenger };
+
+            document.getElementById('userInfoScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+        }
+
+        function startScreening() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('testScreen').style.display = 'block';
+
+            // Reset screening state
+            screeningConfig.currentPlates = [];
+            screeningConfig.correctAnswers = 0;
+            screeningConfig.isScreening = true;
+
+            // Select 2 random screening plates
+            const availablePlates = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            const shuffled = availablePlates.sort(() => 0.5 - Math.random());
+            screeningConfig.currentPlates = [shuffled[0], shuffled[1]];
+
+            // Start with first screening plate
+            currentTest.currentPlate = null;
+            showScreeningPlate();
+        }
+
+        function showScreeningPlate() {
+            const plateNumber = screeningConfig.currentPlates[0]; // Always show first remaining plate
+
+            const plateImage = document.getElementById('plateImage');
+            const plateCounter = document.getElementById('plateCounter');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Show loading overlay
+            loadingOverlay.classList.remove('hidden');
+
+            plateImage.onload = function () {
+                // Hide loading overlay when image is loaded
+                loadingOverlay.classList.add('hidden');
+            };
+
+            plateImage.onerror = function () {
+                console.error('Failed to load screening image:', plateImage.src);
+                plateImage.alt = 'Screening image failed to load';
+                // Hide loading overlay even on error
+                loadingOverlay.classList.add('hidden');
+            };
+
+            plateImage.src = `plates/Screening Plates/${plateNumber}.png`;
+
+            plateCounter.textContent = `Screening - Plate ${3 - screeningConfig.currentPlates.length} of 2`;
+
+            // Reset selection
+            clearSelection();
+            currentTest.selectedAnswer = null;
+        }
+
+        function getCurrentPlate() {
+            // If we don't have a current plate stored, generate a new random one
+            if (!currentTest.currentPlate) {
+                const randomPlate = Math.floor(Math.random() * 9) + 1;
+                const currentType = testConfig.types[currentTest.currentTypeIndex];
+                const currentAxis = currentTest.axisResults[currentType];
+                const shade = testConfig.shades[currentAxis.currentShadeIndex];
+                currentTest.currentPlate = {
+                    shade: shade,
+                    type: currentType,
+                    correctAnswer: randomPlate,
+                    path: `plates/${shade}/${currentType} Plates/${randomPlate}.png`
+                };
+            }
+
+            return currentTest.currentPlate;
+        }
+
+        function startTest() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('testScreen').style.display = 'block';
+
+            // Reset test state
+            currentTest.currentTypeIndex = 0;
+            currentTest.currentPlate = null; // Will generate random plate for first call
+            currentTest.axisResults = {
+                'Deutan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null },
+                'Protan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null },
+                'Tritan': { currentShadeIndex: 0, failCount: 0, completed: false, failLevel: null }
+            };
+            currentTest.selectedAnswer = null;
+
+            showCurrentPlate();
+        }
+
+        function showCurrentPlate() {
+            // Check if test is complete
+            if (isTestComplete()) {
+                showResults();
+                return;
+            }
+
+            const plate = getCurrentPlate();
+
+            const plateImage = document.getElementById('plateImage');
+            const plateCounter = document.getElementById('plateCounter');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+
+            // Show loading overlay
+            loadingOverlay.classList.remove('hidden');
+
+            plateImage.onload = function () {
+                // Hide loading overlay when image is loaded
+                loadingOverlay.classList.add('hidden');
+            };
+
+            plateImage.onerror = function () {
+                console.error('Failed to load image:', plate.path);
+                plateImage.alt = 'Image failed to load';
+                // Hide loading overlay even on error
+                loadingOverlay.classList.add('hidden');
+            };
+
+            plateImage.src = plate.path;
+
+            const currentType = testConfig.types[currentTest.currentTypeIndex];
+            const currentAxis = currentTest.axisResults[currentType];
+            plateCounter.textContent = `${currentType} Cones - Contrast Level ${testConfig.shades[currentAxis.currentShadeIndex]}`;
+
+
+            // Reset selection
+            clearSelection();
+            currentTest.selectedAnswer = null;
+
+        }
+
+        function selectNumber(number) {
+            clearSelection();
+            currentTest.selectedAnswer = number.toString();
+
+            const buttons = document.querySelectorAll('.number-btn');
+            buttons[number - 1].classList.add('selected');
+
+            // Auto-proceed to next plate immediately
+            if (screeningConfig.isScreening) {
+                nextScreeningPlate();
+            } else {
+                nextPlate();
+            }
+        }
+
+        function selectNothing() {
+            clearSelection();
+            currentTest.selectedAnswer = 'nothing';
+
+            document.querySelector('.nothing-btn').classList.add('selected');
+
+            // Auto-proceed to next plate immediately
+            if (screeningConfig.isScreening) {
+                nextScreeningPlate();
+            } else {
+                nextPlate();
+            }
+        }
+
+        function nextScreeningPlate() {
+            if (currentTest.selectedAnswer === null) return;
+
+            const currentPlateNumber = screeningConfig.currentPlates[0];
+            const correctAnswer = currentPlateNumber.toString(); // Filename is the answer
+            const isCorrect = currentTest.selectedAnswer === correctAnswer;
+
+            if (isCorrect) {
+                screeningConfig.correctAnswers++;
+            }
+
+            // Remove current plate from queue
+            screeningConfig.currentPlates.shift();
+
+            // Always show both plates before making decision
+            if (screeningConfig.currentPlates.length === 0) {
+                // Both plates shown - now make decision
+                if (screeningConfig.correctAnswers >= 1) {
+                    // Passed screening (at least 1 correct) - start main test
+                    screeningConfig.isScreening = false;
+                    startTest();
+                } else {
+                    // Failed screening (both wrong) - show inconclusive result
+                    screeningConfig.isScreening = false;
+                    showScreeningFailure();
+                }
+            } else {
+                // Show next screening plate (always show both)
+                showScreeningPlate();
+            }
+        }
+
+        function showScreeningFailure() {
+            document.getElementById('testScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'block';
+
+            const failureResults = {
+                diagnosis: 'Test Inconclusive — Unable to complete screening phase',
+                red: '--',
+                green: '--',
+                blue: '--'
+            };
+
+            document.getElementById('diagnosisResult').textContent = failureResults.diagnosis;
+            document.getElementById('redScore').textContent = failureResults.red;
+            document.getElementById('greenScore').textContent = failureResults.green;
+            document.getElementById('blueScore').textContent = failureResults.blue;
+
+            // Send screening failure results to host app
+            sendResultsToHost(failureResults);
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.number-btn, .nothing-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+        }
+
+        function isTestComplete() {
+            // Test is complete when all cone tests are completed
+            return Object.values(currentTest.axisResults).every(result => result.completed);
+        }
+
+        function nextPlate() {
+            if (currentTest.selectedAnswer === null) return;
+
+            const plate = getCurrentPlate();
+            const isCorrect = currentTest.selectedAnswer === plate.correctAnswer.toString();
+
+            const currentType = testConfig.types[currentTest.currentTypeIndex];
+            const currentAxis = currentTest.axisResults[currentType];
+
+            if (isCorrect) {
+                // Correct response - reset fail count and advance
+                currentAxis.failCount = 0;
+                if (currentAxis.currentShadeIndex < testConfig.shades.length - 1) {
+                    // Move to harder shade (lower contrast)
+                    currentAxis.currentShadeIndex++;
+                } else {
+                    // Reached end successfully - perfect vision for this cone type
+                    currentAxis.completed = true;
+                }
+            } else {
+                // Wrong response - increment fail count
+                currentAxis.failCount++;
+                if (currentAxis.failCount === 1) {
+                    // First fail - stay on same axis for retest (no advancement)
+                    // Will retest at same shade level
+                } else if (currentAxis.failCount >= 2) {
+                    // Second consecutive fail - confirmed failure
+                    currentAxis.failLevel = testConfig.shades[currentAxis.currentShadeIndex];
+                    currentAxis.completed = true;
+                }
+            }
+
+            // Move to next axis or stay on current for retest
+            moveToNextAxis();
+
+            // Clear current plate so next call generates a new random one
+            currentTest.currentPlate = null;
+
+            showCurrentPlate();
+        }
+
+        function moveToNextAxis() {
+            const currentType = testConfig.types[currentTest.currentTypeIndex];
+            const currentAxis = currentTest.axisResults[currentType];
+
+            // If current axis is not completed and failed once, stay for retest
+            if (!currentAxis.completed && currentAxis.failCount === 1) {
+                // Stay on same axis for retest confirmation
+                return;
+            }
+
+            // Move to next uncompleted axis (Deutan -> Protan -> Tritan -> cycle)
+            let attempts = 0;
+            do {
+                currentTest.currentTypeIndex = (currentTest.currentTypeIndex + 1) % testConfig.types.length;
+                attempts++;
+
+                const nextType = testConfig.types[currentTest.currentTypeIndex];
+                const nextAxis = currentTest.axisResults[nextType];
+
+                // If we found an uncompleted axis, use it
+                if (!nextAxis.completed) {
+                    break;
+                }
+
+                // Prevent infinite loop if all axes are completed
+                if (attempts >= testConfig.types.length) {
+                    break;
+                }
+            } while (attempts < testConfig.types.length);
+        }
+
+        function calculateResults() {
+            // Convert fail levels to percentages and determine diagnosis
+            const deutanFailLevel = currentTest.axisResults['Deutan'].failLevel;
+            const protanFailLevel = currentTest.axisResults['Protan'].failLevel;
+            const tritanFailLevel = currentTest.axisResults['Tritan'].failLevel;
+
+            // Validate test results for inconclusive patterns
+            const failLevels = [deutanFailLevel, protanFailLevel, tritanFailLevel];
+            const severeFails = failLevels.filter(l => l === 87 || l === 75).length;
+
+            // Check for inconclusive results (2+ cones failing at highest contrast levels)
+            if (severeFails >= 2) {
+                return {
+                    green: "--",
+                    red: "--",
+                    blue: "--",
+                    diagnosis: "Test Inconclusive — Possible severe deficiency or invalid response pattern"
+                };
+            }
+
+            // Check for any cone tie (same fail level = same percentage)
+            // If any two cones fail at the same level, it's inconclusive
+            const actualFailLevels = [deutanFailLevel, protanFailLevel, tritanFailLevel].filter(level => level !== null);
+            const uniqueFailLevels = [...new Set(actualFailLevels)];
+
+            if (actualFailLevels.length >= 2 && actualFailLevels.length !== uniqueFailLevels.length) {
+                return {
+                    green: "--",
+                    red: "--",
+                    blue: "--",
+                    diagnosis: "Test Inconclusive — Multiple cones show identical response patterns"
+                };
+            }
+
+            // Convert fail levels to descriptive words and percentages
+            const greenDescription = failLevelToDescription(deutanFailLevel);
+            const redDescription = failLevelToDescription(protanFailLevel);
+            const blueDescription = failLevelToDescription(tritanFailLevel);
+
+            const greenPercent = failLevelToPercentage(deutanFailLevel);
+            const redPercent = failLevelToPercentage(protanFailLevel);
+            const bluePercent = failLevelToPercentage(tritanFailLevel);
+
+            // Find the most severe deficiency (lowest percentage)
+            const minPercent = Math.min(greenPercent, redPercent, bluePercent);
+            let diagnosis = "Normal Color Vision";
+
+            if (minPercent < 100) {
+                // Determine which cone type has the worst deficiency
+                let deficiencyType = "";
+                let worstFailLevel = null;
+
+                if (greenPercent === minPercent) {
+                    deficiencyType = "Deutan";
+                    worstFailLevel = deutanFailLevel;
+                } else if (redPercent === minPercent) {
+                    deficiencyType = "Protan";
+                    worstFailLevel = protanFailLevel;
+                } else {
+                    deficiencyType = "Tritan";
+                    worstFailLevel = tritanFailLevel;
+                }
+
+                // Classify severity based on fail level
+                if (worstFailLevel >= 75) {
+                    // Severe (failed at high contrast)
+                    if (deficiencyType === "Deutan") {
+                        diagnosis = "Deuteranopia (Green Blind)";
+                    } else if (deficiencyType === "Protan") {
+                        diagnosis = "Protanopia (Red Blind)";
+                    } else {
+                        diagnosis = "Tritanopia (Blue Blind)";
+                    }
+                } else {
+                    // Mild to moderate
+                    if (deficiencyType === "Deutan") {
+                        diagnosis = "Deuteranomaly (Green Weak)";
+                    } else if (deficiencyType === "Protan") {
+                        diagnosis = "Protanomaly (Red Weak)";
+                    } else {
+                        diagnosis = "Tritanomaly (Blue Weak)";
+                    }
+                }
+            }
+
+            return {
+                green: greenDescription,
+                red: redDescription,
+                blue: blueDescription,
+                diagnosis: diagnosis
+            };
+        }
+
+        function failLevelToPercentage(failLevel) {
+            if (failLevel === null) {
+                return 100; // Normal vision (completed all levels)
+            }
+
+            // Map fail levels to percentages
+            // Higher fail level = failed earlier = worse vision = lower percentage
+            const levelMap = {
+                87: 0,      // Failed at easiest level (severe)
+                75: 20,     // Failed at second level
+                62: 40,     // Failed at third level
+                50: 60,     // Failed at fourth level
+                37: 80,     // Failed at fifth level (mild)
+                25: 100     // Failed only at hardest level (near perfect vision)
+            };
+
+            return levelMap[failLevel] || 0;
+        }
+
+        function failLevelToDescription(failLevel) {
+            if (failLevel === null) {
+                return "Normal"; // Normal vision (completed all levels)
+            }
+
+            // Map fail levels to descriptive words
+            // Higher fail level = failed earlier = worse vision
+            const levelMap = {
+                87: "Severe",     // Failed at easiest level
+                75: "Moderate",   // Failed at second level
+                62: "Moderate",   // Failed at third level
+                50: "Mild",       // Failed at fourth level
+                37: "Mild",       // Failed at fifth level
+                25: "Very Mild"   // Failed only at hardest level
+            };
+
+            return levelMap[failLevel] || "Severe";
+        }
+
+        function showResults() {
+            document.getElementById('testScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'block';
+
+            const results = calculateResults();
+
+            document.getElementById('diagnosisResult').textContent = results.diagnosis;
+            document.getElementById('redScore').textContent = results.red;
+            document.getElementById('greenScore').textContent = results.green;
+            document.getElementById('blueScore').textContent = results.blue;
+
+            // Submit results to backend server
+            submitResultsToServer(results);
+        }
+
+        function restartTest() {
+            document.getElementById('resultsScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'block';
+        }
+
+        // Submit results to backend server
+        async function submitResultsToServer(results) {
+            try {
+                const testResults = {
+                    type: "eyeResult",
+                    timestamp: new Date().toISOString(),
+                    payload: {
+                        diagnosis: results.diagnosis,
+                        scores: {
+                            red: results.red,
+                            green: results.green,
+                            blue: results.blue
+                        },
+                        rawResults: {
+                            deutan: {
+                                failLevel: currentTest.axisResults['Deutan'].failLevel,
+                                completed: currentTest.axisResults['Deutan'].completed,
+                                percentage: failLevelToPercentage(currentTest.axisResults['Deutan'].failLevel)
+                            },
+                            protan: {
+                                failLevel: currentTest.axisResults['Protan'].failLevel,
+                                completed: currentTest.axisResults['Protan'].completed,
+                                percentage: failLevelToPercentage(currentTest.axisResults['Protan'].failLevel)
+                            },
+                            tritan: {
+                                failLevel: currentTest.axisResults['Tritan'].failLevel,
+                                completed: currentTest.axisResults['Tritan'].completed,
+                                percentage: failLevelToPercentage(currentTest.axisResults['Tritan'].failLevel)
+                            }
+                        },
+                        testMetadata: {
+                            version: "1.0",
+                            testType: "color_vision_assessment",
+                            platform: navigator.userAgent,
+                            screeningPassed: screeningConfig.correctAnswers >= 1
+                        },
+                        userInfo: userData
+                    }
+                };
+
+                const response = await fetch('/api/eye-test-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testResults),
+                });
+
+                const data = await response.json();
+                console.log('Success sending to server:', data);
+            } catch (error) {
+                console.error('Error sending to server:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>
