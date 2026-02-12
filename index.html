@@ -507,6 +507,10 @@
                     <label for="userMessenger">Messenger Username</label>
                     <input type="text" id="userMessenger" placeholder="Enter your messenger username">
                 </div>
+                <div class="form-group">
+                    <label for="studentNumber">Student Number</label>
+                    <input type="text" id="studentNumber" placeholder="Enter your student number">
+                </div>
                 <button class="start-btn" onclick="submitUserInfo()" style="margin-top: 20px;">Continue</button>
             </div>
         </div>
@@ -646,20 +650,22 @@
         let userData = {
             name: '',
             phone: '',
-            messenger: ''
+            messenger: '',
+            studentNumber: ''
         };
 
         function submitUserInfo() {
             const name = document.getElementById('userName').value.trim();
             const phone = document.getElementById('userPhone').value.trim();
             const messenger = document.getElementById('userMessenger').value.trim();
+            const studentNumber = document.getElementById('studentNumber').value.trim();
 
-            if (!name || !phone || !messenger) {
-                alert('Please fill in all fields before proceeding.');
+            if (!name || !phone || !messenger || !studentNumber) {
+                alert('Please fill in ALL fields before proceeding.');
                 return;
             }
 
-            userData = { name, phone, messenger };
+            userData = { name, phone, messenger, studentNumber };
 
             document.getElementById('userInfoScreen').style.display = 'none';
             document.getElementById('startScreen').style.display = 'block';
@@ -1102,8 +1108,20 @@
         }
 
         function restartTest() {
+            // Hide results
             document.getElementById('resultsScreen').style.display = 'none';
-            document.getElementById('startScreen').style.display = 'block';
+
+            // Clear inputs
+            document.getElementById('userName').value = '';
+            document.getElementById('userPhone').value = '';
+            document.getElementById('userMessenger').value = '';
+            document.getElementById('studentNumber').value = '';
+
+            // Reset state
+            userData = { name: '', phone: '', messenger: '', studentNumber: '' };
+
+            // Show info screen
+            document.getElementById('userInfoScreen').style.display = 'flex';
         }
 
         // Submit results to backend server
