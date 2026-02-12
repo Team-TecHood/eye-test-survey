@@ -1141,12 +1141,12 @@
                             testType: "color_vision_assessment",
                             platform: navigator.userAgent,
                             screeningPassed: screeningConfig.correctAnswers >= 1
-                        },
-                        userInfo: userData
-                    }
+                        }
+                    },
+                    userInfo: userData
                 };
 
-                const response = await fetch('/api/eye-test-results', {
+                const response = await fetch(`https://backend-qpnl.onrender.com/api/eye-test-results`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
