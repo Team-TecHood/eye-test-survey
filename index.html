@@ -222,19 +222,24 @@
             transition: all 0.2s ease;
         }
 
-        .number-btn:hover {
-            background-color: #0072B2;
-            border-color: #0072B2;
-            color: #fff;
+        @media (hover: hover) {
+            .number-btn:hover {
+                background-color: #0072B2;
+                border-color: #0072B2;
+                color: #fff;
+            }
         }
 
-        .number-btn:focus {
-            outline: none;
+        .number-btn:active {
+            background-color: #005a8d;
+            border-color: #005a8d;
+            color: #fff;
+            transform: scale(0.95);
         }
 
         .number-btn.selected {
-            background-color: #0072B2;
-            border-color: #0072B2;
+            background-color: var(--button-bg);
+            border-color: var(--border-color);
         }
 
         .nothing-btn {
@@ -251,19 +256,24 @@
             display: block;
         }
 
-        .nothing-btn:hover {
-            background-color: #0072B2;
-            border-color: #0072B2;
-            color: #fff;
+        @media (hover: hover) {
+            .nothing-btn:hover {
+                background-color: #0072B2;
+                border-color: #0072B2;
+                color: #fff;
+            }
         }
 
-        .nothing-btn:focus {
-            outline: none;
+        .nothing-btn:active {
+            background-color: #005a8d;
+            border-color: #005a8d;
+            color: #fff;
+            transform: scale(0.95);
         }
 
         .nothing-btn.selected {
-            background-color: #0072B2;
-            border-color: #0072B2;
+            background-color: var(--button-bg);
+            border-color: var(--border-color);
         }
 
         .results-container {
@@ -798,11 +808,7 @@
         }
 
         function selectNumber(number) {
-            clearSelection();
             currentTest.selectedAnswer = number.toString();
-
-            const buttons = document.querySelectorAll('.number-btn');
-            buttons[number - 1].classList.add('selected');
 
             // Auto-proceed to next plate immediately
             if (screeningConfig.isScreening) {
@@ -813,10 +819,7 @@
         }
 
         function selectNothing() {
-            clearSelection();
             currentTest.selectedAnswer = 'nothing';
-
-            document.querySelector('.nothing-btn').classList.add('selected');
 
             // Auto-proceed to next plate immediately
             if (screeningConfig.isScreening) {
@@ -1108,8 +1111,10 @@
         }
 
         function restartTest() {
-            // Hide results
+            // Hide all screens
             document.getElementById('resultsScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('testScreen').style.display = 'none';
 
             // Clear inputs
             document.getElementById('userName').value = '';
